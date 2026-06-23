@@ -12,4 +12,6 @@ pub enum MatrixError {
     MatrixNotFull,
     #[error("invalid slot number {0} (must be 1..=7)")]
     InvalidSlotNumber(u8),
+    #[error("database error: {0}")]
+    DatabaseError(String),
 }

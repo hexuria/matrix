@@ -58,8 +58,12 @@ mod account;
 mod error;
 pub mod events;
 mod matrix;
+#[cfg(feature = "db")]
+mod repository;
 
 pub use account::Account;
 pub use error::MatrixError;
 pub use events::MatrixCycled;
 pub use matrix::{AccountId, Matrix, MatrixId, MatrixStatus, SlotNumber, MATRIX_SIZE};
+#[cfg(feature = "db")]
+pub use repository::{MatrixRepository, PgMatrixRepository};

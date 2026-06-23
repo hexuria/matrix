@@ -167,16 +167,38 @@ pub enum MatrixStatus {
     Completed,
 }
 
+impl std::fmt::Display for MatrixStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            MatrixStatus::Filling => "Filling",
+            MatrixStatus::Completed => "Completed",
+        };
+        write!(f, "{s}")
+    }
+}
+
+impl std::str::FromStr for MatrixStatus {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Filling" | "filling" | "FILLING" => Ok(MatrixStatus::Filling),
+            "Completed" | "completed" | "COMPLETED" => Ok(MatrixStatus::Completed),
+            _ => Err(format!("Unknown MatrixStatus: {s}")),
+        }
+    }
+}
+
 /// The 2×3 forced-matrix aggregate (7 slots).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Matrix {
-    id: MatrixId,
-    status: MatrixStatus,
+    pub(crate) id: MatrixId,
+    pub(crate) status: MatrixStatus,
     /// Ordered slot map. BTreeMap keeps slots deterministically ordered by
     /// SlotNumber (the old code used a HashMap, producing non-deterministic
     /// graduate ordering on cycle).
-    slots: BTreeMap<SlotNumber, AccountId>,
-    owner: AccountId,
+    pub(crate) slots: BTreeMap<SlotNumber, AccountId>,
+    pub(crate) owner: AccountId,
 }
 
 impl Matrix {
