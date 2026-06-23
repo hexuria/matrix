@@ -204,8 +204,9 @@ impl Matrix {
         self.slots.get(&slot).copied()
     }
 
-    /// Direct children of a slot, left-first. Slot 1 → [2,3], slot 2 → [4,5],
-    /// slot 3 → [6,7]; leaves return an empty vec.
+    /// Direct children of a slot, left-first. Slot 1 → slots 2 and 3,
+    /// slot 2 → slots 4 and 5, slot 3 → slots 6 and 7; leaves (4-7) return
+    /// an empty vec.
     pub fn children_of(parent: SlotNumber) -> Vec<SlotNumber> {
         match parent {
             SlotNumber::S1 => vec![SlotNumber::S2, SlotNumber::S3],
