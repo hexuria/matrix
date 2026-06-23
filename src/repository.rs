@@ -30,17 +30,13 @@ impl PgMatrixRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }
-}
 
-#[async_trait]
-impl MatrixRepository for PgMatrixRepository {
-    async fn load(&self, id: MatrixId) -> Result<Matrix, MatrixError> {
-        let mut conn = self
-            .pool
-            .acquire()
-            .await
-            .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
-
+    /// Load a complete Matrix state from the database by its ID using an existing connection/transaction.
+    pub async fn load_tx(
+        &self,
+        conn: &mut sqlx::PgConnection,
+        id: MatrixId,
+    ) -> Result<Matrix, MatrixError> {
         // 1. Fetch matrix metadata
         let matrix_row = sqlx::query("SELECT id, owner_id, status FROM matrices WHERE id = $1")
             .bind(id.into_inner())
@@ -86,13 +82,13 @@ impl MatrixRepository for PgMatrixRepository {
         })
     }
 
-    async fn save(&self, matrix: &Matrix, events: &[MatrixCycled]) -> Result<(), MatrixError> {
-        let mut tx = self
-            .pool
-            .begin()
-            .await
-            .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
-
+    /// Persist Matrix changes and emit events using an existing connection/transaction.
+    pub async fn save_tx(
+        &self,
+        conn: &mut sqlx::PgConnection,
+        matrix: &Matrix,
+        events: &[MatrixCycled],
+    ) -> Result<(), MatrixError> {
         // 1. Upsert matrix
         sqlx::query(
             "INSERT INTO matrices (id, owner_id, status) \
@@ -102,14 +98,14 @@ impl MatrixRepository for PgMatrixRepository {
         .bind(matrix.id.into_inner())
         .bind(matrix.owner.into_inner())
         .bind(matrix.status.to_string())
-        .execute(&mut *tx)
+        .execute(&mut *conn)
         .await
         .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
 
         // 2. Delete existing slots to perform clean replacement
         sqlx::query("DELETE FROM matrix_slots WHERE matrix_id = $1")
             .bind(matrix.id.into_inner())
-            .execute(&mut *tx)
+            .execute(&mut *conn)
             .await
             .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
 
@@ -122,7 +118,7 @@ impl MatrixRepository for PgMatrixRepository {
             .bind(matrix.id.into_inner())
             .bind(slot_number.as_u8() as i32)
             .bind(account_id.into_inner())
-            .execute(&mut *tx)
+            .execute(&mut *conn)
             .await
             .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
         }
@@ -135,25 +131,20 @@ impl MatrixRepository for PgMatrixRepository {
             )
             .bind(event.account_id)
             .bind(event.matrix_id)
-            .execute(&mut *tx)
+            .execute(&mut *conn)
             .await
             .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
         }
 
-        tx.commit()
-            .await
-            .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
-
         Ok(())
     }
 
-    async fn find_active_by_owner(&self, owner: AccountId) -> Result<Option<Matrix>, MatrixError> {
-        let mut conn = self
-            .pool
-            .acquire()
-            .await
-            .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
-
+    /// Find the active (Filling) matrix owned by a given user using an existing connection/transaction.
+    pub async fn find_active_by_owner_tx(
+        &self,
+        conn: &mut sqlx::PgConnection,
+        owner: AccountId,
+    ) -> Result<Option<Matrix>, MatrixError> {
         // Find the ID of the active matrix owned by `owner`
         let active_row = sqlx::query(
             "SELECT id FROM matrices WHERE owner_id = $1 AND status = 'Filling' LIMIT 1",
@@ -166,10 +157,44 @@ impl MatrixRepository for PgMatrixRepository {
         match active_row {
             Some(row) => {
                 let id_uuid: uuid::Uuid = row.get("id");
-                let matrix = self.load(MatrixId::from(id_uuid)).await?;
+                let matrix = self.load_tx(conn, MatrixId::from(id_uuid)).await?;
                 Ok(Some(matrix))
             }
             None => Ok(None),
         }
+    }
+}
+
+#[async_trait]
+impl MatrixRepository for PgMatrixRepository {
+    async fn load(&self, id: MatrixId) -> Result<Matrix, MatrixError> {
+        let mut conn = self
+            .pool
+            .acquire()
+            .await
+            .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
+        self.load_tx(&mut conn, id).await
+    }
+
+    async fn save(&self, matrix: &Matrix, events: &[MatrixCycled]) -> Result<(), MatrixError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
+        self.save_tx(&mut tx, matrix, events).await?;
+        tx.commit()
+            .await
+            .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn find_active_by_owner(&self, owner: AccountId) -> Result<Option<Matrix>, MatrixError> {
+        let mut conn = self
+            .pool
+            .acquire()
+            .await
+            .map_err(|e| MatrixError::DatabaseError(e.to_string()))?;
+        self.find_active_by_owner_tx(&mut conn, owner).await
     }
 }
