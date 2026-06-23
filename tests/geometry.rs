@@ -1,10 +1,10 @@
 //! Matrix geometry: the fixed 2x3 / 7-slot layout and parent->child mapping.
 
-use flushmatrix::{Matrix, SlotNumber};
+use matrix::{Matrix, SlotNumber};
 
 #[test]
 fn matrix_size_is_seven() {
-    assert_eq!(flushmatrix::MATRIX_SIZE, 7);
+    assert_eq!(matrix::MATRIX_SIZE, 7);
 }
 
 #[test]

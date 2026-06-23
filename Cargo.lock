@@ -15,25 +15,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
-name = "flushevents"
-version = "0.1.0"
-dependencies = [
- "serde",
- "uuid",
-]
-
-[[package]]
-name = "flushmatrix"
-version = "0.1.0"
-dependencies = [
- "flushevents",
- "serde",
- "serde_json",
- "thiserror",
- "uuid",
-]
-
-[[package]]
 name = "futures-core"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -90,6 +71,16 @@ name = "libc"
 version = "0.2.186"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
+
+[[package]]
+name = "matrix"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
+ "uuid",
+]
 
 [[package]]
 name = "memchr"

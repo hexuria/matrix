@@ -1,4 +1,4 @@
-//! # flushmatrix
+//! # matrix
 //!
 //! 2×3 forced-matrix referral tree for the Royal Flush Network.
 //!
@@ -29,14 +29,14 @@
 //!
 //! ## Events
 //!
-//! Cycling emits a [`flushevents::MatrixCycled`] event via the outbox pattern
+//! Cycling emits a [`events::MatrixCycled`] event via the outbox pattern
 //! (no async runtime coupling): `cycle` returns `(new_matrix, graduates,
 //! Vec<MatrixCycled>)`.
 //!
 //! # Quick start
 //!
 //! ```
-//! use flushmatrix::{Account, AccountId, Matrix};
+//! use matrix::{Account, AccountId, Matrix};
 //!
 //! let owner = AccountId::generate();
 //! let mut m = Matrix::new(owner);
@@ -56,10 +56,10 @@
 
 mod account;
 mod error;
+pub mod events;
 mod matrix;
 
 pub use account::Account;
 pub use error::MatrixError;
+pub use events::MatrixCycled;
 pub use matrix::{AccountId, Matrix, MatrixId, MatrixStatus, SlotNumber, MATRIX_SIZE};
-
-pub use flushevents;

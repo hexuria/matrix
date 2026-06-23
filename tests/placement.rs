@@ -1,7 +1,7 @@
 //! Placement rules: sequential fill, sponsor-preferred, and fallback.
 //! Ported from rfn/matrix/src/domain/tests.rs.
 
-use flushmatrix::{Account, AccountId, Matrix, MatrixStatus, SlotNumber, MATRIX_SIZE};
+use matrix::{Account, AccountId, Matrix, MatrixStatus, SlotNumber, MATRIX_SIZE};
 
 fn owner_matrix() -> (AccountId, Matrix) {
     let owner = AccountId::generate();
@@ -42,7 +42,7 @@ fn adding_to_full_matrix_errors() {
             .unwrap();
     }
     let result = m.add_account(Account::unsponsored(AccountId::generate(), "overflow"));
-    assert!(matches!(result, Err(flushmatrix::MatrixError::MatrixFull)));
+    assert!(matches!(result, Err(matrix::MatrixError::MatrixFull)));
 }
 
 #[test]

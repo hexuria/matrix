@@ -3,7 +3,7 @@
 //! Cleanup note: the old `DomainError::MatrixFull` was misused for the "not
 //! full" guard. We expose a dedicated `MatrixNotFull` variant.
 
-use flushmatrix::{Account, AccountId, Matrix, MatrixError, MatrixStatus, SlotNumber, MATRIX_SIZE};
+use matrix::{Account, AccountId, Matrix, MatrixError, MatrixStatus, SlotNumber, MATRIX_SIZE};
 
 fn full_matrix(owner: AccountId) -> (Matrix, Vec<AccountId>) {
     let mut m = Matrix::new(owner);

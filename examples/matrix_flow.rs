@@ -6,10 +6,10 @@
 //!
 //! Run with: `cargo run --example matrix_flow`
 
-use flushmatrix::{Account, AccountId, Matrix, MatrixStatus, SlotNumber};
+use matrix::{Account, AccountId, Matrix, MatrixStatus, SlotNumber};
 
 fn main() {
-    println!("=== flushmatrix flow ===\n");
+    println!("=== matrix flow ===\n");
 
     // Scenario 1: sequential fill + cycle.
     let owner = AccountId::generate();

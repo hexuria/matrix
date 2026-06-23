@@ -2,7 +2,7 @@
 
 use crate::account::Account;
 use crate::error::MatrixError;
-use flushevents::MatrixCycled;
+use crate::events::MatrixCycled;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -18,6 +18,18 @@ impl AccountId {
     /// Generate a fresh time-sortable id.
     pub fn generate() -> Self {
         Self(Uuid::now_v7())
+    }
+
+    /// Access the underlying UUID as a reference.
+    #[inline]
+    pub fn as_uuid(&self) -> &Uuid {
+        &self.0
+    }
+
+    /// Unwrap into the underlying UUID.
+    #[inline]
+    pub fn into_inner(self) -> Uuid {
+        self.0
     }
 }
 
@@ -60,6 +72,18 @@ impl MatrixId {
     /// Generate a fresh time-sortable id.
     pub fn generate() -> Self {
         Self(Uuid::now_v7())
+    }
+
+    /// Access the underlying UUID as a reference.
+    #[inline]
+    pub fn as_uuid(&self) -> &Uuid {
+        &self.0
+    }
+
+    /// Unwrap into the underlying UUID.
+    #[inline]
+    pub fn into_inner(self) -> Uuid {
+        self.0
     }
 }
 
@@ -206,13 +230,13 @@ impl Matrix {
 
     /// Direct children of a slot, left-first. Slot 1 → slots 2 and 3,
     /// slot 2 → slots 4 and 5, slot 3 → slots 6 and 7; leaves (4-7) return
-    /// an empty vec.
-    pub fn children_of(parent: SlotNumber) -> Vec<SlotNumber> {
+    /// an empty slice.
+    pub fn children_of(parent: SlotNumber) -> &'static [SlotNumber] {
         match parent {
-            SlotNumber::S1 => vec![SlotNumber::S2, SlotNumber::S3],
-            SlotNumber::S2 => vec![SlotNumber::S4, SlotNumber::S5],
-            SlotNumber::S3 => vec![SlotNumber::S6, SlotNumber::S7],
-            _ => Vec::new(),
+            SlotNumber::S1 => &[SlotNumber::S2, SlotNumber::S3],
+            SlotNumber::S2 => &[SlotNumber::S4, SlotNumber::S5],
+            SlotNumber::S3 => &[SlotNumber::S6, SlotNumber::S7],
+            _ => &[],
         }
     }
 
@@ -237,9 +261,9 @@ impl Matrix {
             if let Some(sponsor_slot) = self.slot_of(sponsor) {
                 for child in Matrix::children_of(sponsor_slot) {
                     use std::collections::btree_map::Entry;
-                    if let Entry::Vacant(e) = self.slots.entry(child) {
+                    if let Entry::Vacant(e) = self.slots.entry(*child) {
                         e.insert(id);
-                        placed = Some(child);
+                        placed = Some(*child);
                         break;
                     }
                 }
@@ -249,6 +273,9 @@ impl Matrix {
         // 2. Sequential fallback: lowest empty slot.
         if placed.is_none() {
             for slot in SlotNumber::all() {
+                if slot == SlotNumber::S1 {
+                    continue;
+                }
                 use std::collections::btree_map::Entry;
                 if let Entry::Vacant(e) = self.slots.entry(slot) {
                     e.insert(id);
@@ -300,7 +327,9 @@ impl Matrix {
 
     // ----- internals -----------------------------------------------------
 
-    fn slot_of(&self, account: AccountId) -> Option<SlotNumber> {
+    /// Find the slot occupied by a given account ID in this matrix, if any.
+    /// Useful for rendering user interfaces or visual tree navigation.
+    pub fn slot_of(&self, account: AccountId) -> Option<SlotNumber> {
         self.slots
             .iter()
             .find_map(|(slot, id)| (*id == account).then_some(*slot))
@@ -333,5 +362,28 @@ mod tests {
         );
         assert!(Matrix::children_of(SlotNumber::S4).is_empty());
         assert!(Matrix::children_of(SlotNumber::S7).is_empty());
+    }
+
+    #[test]
+    fn id_wrappers_as_uuid_and_into_inner() {
+        let raw = Uuid::now_v7();
+        let acct_id = AccountId::from(raw);
+        assert_eq!(acct_id.as_uuid(), &raw);
+        assert_eq!(acct_id.into_inner(), raw);
+
+        let m_raw = Uuid::now_v7();
+        let m_id = MatrixId::from(m_raw);
+        assert_eq!(m_id.as_uuid(), &m_raw);
+        assert_eq!(m_id.into_inner(), m_raw);
+    }
+
+    #[test]
+    fn slot_of_finds_correct_member() {
+        let owner = AccountId::generate();
+        let matrix = Matrix::new(owner);
+        assert_eq!(matrix.slot_of(owner), Some(SlotNumber::S1));
+
+        let non_member = AccountId::generate();
+        assert_eq!(matrix.slot_of(non_member), None);
     }
 }

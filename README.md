@@ -1,4 +1,4 @@
-# flushmatrix
+# matrix
 
 **2×3 forced-matrix referral tree** for the Royal Flush Network (RFN).
 
@@ -51,7 +51,7 @@ directly so the caller decides what to do with them (push to a channel, persist,
 log, ignore).
 
 ```rust
-use flushmatrix::{Account, AccountId, Matrix};
+use matrix::{Account, AccountId, Matrix};
 
 let owner = AccountId::generate();
 let mut m = Matrix::new(owner);
@@ -73,7 +73,7 @@ assert!(!graduates.contains(&owner));
 ## Sponsor-preferred placement
 
 ```rust
-use flushmatrix::{Account, AccountId, Matrix, SlotNumber};
+use matrix::{Account, AccountId, Matrix, SlotNumber};
 
 let owner = AccountId::generate();
 let mut m = Matrix::new(owner);
@@ -89,7 +89,7 @@ assert_eq!(slot, SlotNumber::S3);
 
 ```toml
 [dependencies]
-flushmatrix = "0.1"
+matrix = { path = "../matrix" }
 ```
 
 ```bash
@@ -105,6 +105,23 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test                        # 21 tests
 ```
 
+## WebAssembly (WASM) & WASI Support
+
+`matrix` is fully compatible with WebAssembly **out of the box**. It supports compilation for both browser environments (Leptos frontend clients) and server-side WASM sandboxes (such as **Leptos Spin** or **Leptos Wasmtime**).
+
+### 1. Browser-Side WebAssembly (`wasm32-unknown-unknown`)
+Pre-configured with `uuid/js` feature enabled, so generating secure `v7` UUIDs requests secure entropy from browser-native JavaScript APIs (`window.crypto.getRandomValues`).
+```bash
+cargo check --target wasm32-unknown-unknown
+```
+
+### 2. Server-Side WASM / WASI (`wasm32-wasip1`)
+Compiles seamlessly to WASI for deployments like Spin and Wasmtime. WASI system calls provide entropy natively.
+```bash
+cargo check --target wasm32-wasip1
+```
+
 ## License
 
 MIT.
+
